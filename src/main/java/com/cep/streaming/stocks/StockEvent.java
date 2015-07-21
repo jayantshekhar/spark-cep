@@ -1,26 +1,31 @@
-package com.cep.streaming.dataset;
+package com.cep.streaming.stocks;
+
+import com.cep.streaming.event.CEPEvent;
 
 import java.io.Serializable;
 
 /**
- * Created by jayant on 7/19/15.
+ * Created by jayant on 7/20/15.
  */
-public class Stock implements Serializable {
+public class StockEvent extends CEPEvent implements Serializable {
 
     private String symbol;
     private double price;
     private double ask;
     private double bid;
 
-    public Stock() {
+    public StockEvent() {
 
     }
 
-    public Stock(String str) {
+    public void init(String str) {
+
         String[] parts = str.split(",");
+
         setSymbol(parts[0]);
         setPrice(Double.parseDouble(parts[1].trim()));
-
+        setAsk(Double.parseDouble(parts[2].trim()));
+        setBid(Double.parseDouble(parts[3].trim()));
     }
 
     public String getSymbol() {

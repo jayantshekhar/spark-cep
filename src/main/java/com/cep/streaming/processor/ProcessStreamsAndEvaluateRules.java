@@ -1,74 +1,85 @@
-package com.cep.streaming.sql;
+package com.cep.streaming.processor;
 
 import com.cep.streaming.dataset.Stock;
+import com.cep.streaming.event.CEPEvent;
 import com.cep.streaming.listener.EventListener;
 import com.cep.streaming.listener.MapEvent;
-import com.cep.util.SparkConfUtil;
-import org.apache.spark.SparkConf;
+import com.cep.streaming.rule.StreamingRule;
+import com.cep.streaming.sql.SQLContextSingleton;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SQLContext;
-import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.Time;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 
 /**
- * Created by jayant on 5/4/15.
+ * Created by jayant on 7/20/15.
  */
-public class SQLOnStockStream {
+public class ProcessStreamsAndEvaluateRules {
 
-    public  SQLOnStockStream() {
-    }
+    public static void process(JavaStreamingContext ssc, JavaDStream<String> textStream,
+                               String eventClass, final String tableName, final StreamingRule[] rules) throws Exception {
 
-    public static void main(String[] args) {
-        if (args.length != 2) {
-            System.err.println("Usage: SQLOnStockStream <in> <out>");
-            System.exit(1);
-        }
+        final Class ec = Class.forName(eventClass);
 
-        // create streaming context
-        Duration batchInterval = new Duration(20000);
-        SparkConf sparkConf = new SparkConf().setAppName("SQLOnStockStream");
-        SparkConfUtil.setConf(sparkConf);
-        JavaStreamingContext ssc = new JavaStreamingContext(sparkConf, batchInterval);
-
-        // create text file stream
-        JavaDStream<String> textStream = ssc.textFileStream(args[0]);
-
-        // create the Stock DStream
-        JavaDStream<Stock> stockStream = textStream.map(new Function<String, Stock>() {
+        // create the specific CEPEvent DStream
+        JavaDStream<CEPEvent> eventStream = textStream.map(new Function<String, CEPEvent>() {
             @Override
-            public Stock call(String str) {
-                Stock p = new Stock(str);
-                return p;
+            public CEPEvent call(String str) {
+                try {
+                    CEPEvent event = (CEPEvent)ec.newInstance();
+                    event.init(str);
+                    return event;
+                } catch(Exception ex) {
+                    return null;
+                }
             }
         });
 
-        // query stock dstream
-        queryStockStream(ssc, stockStream);
-
-        ssc.start();
-        ssc.awaitTermination();
-    }
-
-    // query Stock DStream
-    private static void queryStockStream(JavaStreamingContext ssc, JavaDStream<Stock> personStream) {
 
         // Convert RDDs of the words DStream to DataFrame and run SQL query
-        personStream.foreachRDD(new Function2<JavaRDD<Stock>, Time, Void>() {
+        eventStream.foreachRDD(new Function2<JavaRDD<CEPEvent>, Time, Void>() {
             @Override
-            public Void call(JavaRDD<Stock> rdd, Time time) {
+            public Void call(JavaRDD<CEPEvent> rdd, Time time) {
                 SQLContext sqlContext = SQLContextSingleton.getInstance(rdd.context());
 
                 // Convert JavaRDD[Stock] to DataFrame
-                DataFrame stockDataFrame = sqlContext.createDataFrame(rdd, Stock.class);
+                DataFrame stockDataFrame = sqlContext.createDataFrame(rdd, ec);
 
                 // Register as table
-                stockDataFrame.registerTempTable("stocks");
+                stockDataFrame.registerTempTable(tableName);
+
+                for (int i=0; i<rules.length; i++) {
+                    StreamingRule rule = rules[i];
+
+                    DataFrame df = sqlContext.sql(rule.sql);
+                    df.show();
+
+                    try {
+                        final EventListener listener = EventListener.createListener(Class.forName(rule.eventListenerClass));
+
+                        df.javaRDD().map(new Function<Row, MapEvent>() {
+                            @Override
+                            public MapEvent call(Row row) throws Exception {
+
+                                MapEvent event = new MapEvent();
+                                for (int i=0; i<row.size(); i++) {
+                                    Object o = row.get(i);
+                                    event.put(i, o);
+                                }
+                                return event;
+                            }
+                        });
+
+                    } catch(Exception ex) {
+
+                    }
+
+                }
 
                 // #ticks/avg/min/max events per symbol on table using SQL and print it
                 DataFrame stocksCountsDataFrame =
@@ -112,5 +123,3 @@ public class SQLOnStockStream {
     }
 
 }
-
-
