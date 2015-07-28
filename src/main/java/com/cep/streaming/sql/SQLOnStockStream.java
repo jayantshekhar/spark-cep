@@ -97,10 +97,7 @@ public class SQLOnStockStream {
                             sqlContext.sql("select symbol, (max(price) - min(price))/min(price)*100 as percent_dropoff from stocks where percent_dropoff > 20 group by symbol");
                     System.out.println("========= " + time + "=========");
                     stocksCountsDataFrame.show();
-
-                    // find the 20 min moving average
-
-                    // detect stocks with 5 continuously increasing ticks
+                    
 
                 } catch(Exception ex) {
 
