@@ -78,7 +78,7 @@ public class SQLOnStockStream {
 
                 // create listener
                 try {
-                    final EventListener listener = EventListener.createListener(Class.forName("StockEventListener"));
+                    final EventListener listener = EventListener.createListener(Class.forName("com.cep.streaming.stocks.StockEventListener"));
 
                     stocksCountsDataFrame.javaRDD().map(new Function<Row, MapEvent>() {
                         @Override
@@ -94,13 +94,13 @@ public class SQLOnStockStream {
 
                     // find symbols with rapid drop off (> 20%)
                     DataFrame dropoffsDataFrame =
-                            sqlContext.sql("select symbol, (max(price) - min(price))/min(price)*100 as percent_dropoff from stocks where percent_dropoff > 20 group by symbol");
+                            sqlContext.sql("select symbol, (max(price) - min(price))/min(price)*100 as percent_dropoff from stocks group by symbol having percent_dropoff > 20");
                     System.out.println("========= " + time + "=========");
-                    stocksCountsDataFrame.show();
-                    
+                    //dropoffsDataFrame.show();
+
 
                 } catch(Exception ex) {
-
+                    ex.printStackTrace();
                 }
 
                 return null;
