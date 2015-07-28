@@ -49,7 +49,7 @@ public class StockEvent extends CEPEvent implements Serializable {
     }
 
     public void setAsk(double ask) {
-        this.price = price;
+        this.ask = ask;
     }
 
     public double getBid() {

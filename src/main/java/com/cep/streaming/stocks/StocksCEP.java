@@ -32,16 +32,16 @@ public class StocksCEP {
 
         // query stock dstream
         StreamingRule rule = new StreamingRule();
-        rule.eventClass = "Stock";
-        rule.eventListenerClass = "StockEventListener";
-        rule.sql = "select count(*) from stocks";
+        rule.eventClass = "com.cep.streaming.stocks.StockEvent";
+        rule.eventListenerClass = "com.cep.streaming.stocks.StockEventListener";
+        rule.sql = "select * from stocks";
         rule.tableName = "stocks";
 
         StreamingRule[] rules = new StreamingRule[1];
         rules[0] = rule;
 
         try {
-            ProcessStreamsAndEvaluateRules.process(ssc, textStream, "StockEvent", "stocks", rules);
+            ProcessStreamsAndEvaluateRules.process(ssc, textStream, "com.cep.streaming.stocks.StockEvent", "stocks", rules);
         } catch(Exception ex) {
             ex.printStackTrace();
         }
