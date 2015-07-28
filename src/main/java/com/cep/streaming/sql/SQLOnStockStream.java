@@ -58,7 +58,7 @@ public class SQLOnStockStream {
     // query Stock DStream
     private static void queryStockStream(JavaStreamingContext ssc, JavaDStream<Stock> stockStream) {
 
-        // Convert RDDs of the words DStream to DataFrame and run SQL query
+        // Process each of the RDDs in the DStream
         stockStream.foreachRDD(new Function2<JavaRDD<Stock>, Time, Void>() {
             @Override
             public Void call(JavaRDD<Stock> rdd, Time time) {
@@ -70,7 +70,7 @@ public class SQLOnStockStream {
                 // Register as table
                 stockDataFrame.registerTempTable("stocks");
 
-                // #ticks/avg/min/max events per symbol on table using SQL and print it
+                // query #ticks/avg/min/max events per symbol on table using SQL and print it
                 DataFrame stocksCountsDataFrame =
                         sqlContext.sql("select symbol, count(*) as numticks, avg(price) as avgprice, min(price) as minprice, max(price) as maxprice from stocks group by symbol");
                 System.out.println("========= " + time + "=========");
