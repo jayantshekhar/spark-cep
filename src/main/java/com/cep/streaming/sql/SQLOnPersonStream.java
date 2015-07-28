@@ -63,6 +63,7 @@ public class SQLOnPersonStream {
 
     // join the streams
     private static JavaDStream<Person> joinStreams(JavaStreamingContext ssc, JavaDStream<Person> personStream) {
+
         JavaPairDStream<String, Person> personpair = personStream.mapToPair(new PairFunction<Person, String, Person>() {
             @Override
             public Tuple2<String, Person> call(Person p) {
@@ -83,17 +84,6 @@ public class SQLOnPersonStream {
                 return p;
             }
         });
-
-        /***
-         // map it to a joined dataset
-         JavaPairDStream<String, Person> jdstream111 = joinStream.mapValues(new Function<Tuple2<Person, Person>, Person>() {
-        @Override
-        public Person call(Tuple2<Person, Person> t2) {
-        Person p = t2._1();
-        return p;
-        }
-        });
-         ***/
 
         return jdstream;
     }
