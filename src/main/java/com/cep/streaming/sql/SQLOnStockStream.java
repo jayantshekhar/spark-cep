@@ -56,10 +56,10 @@ public class SQLOnStockStream {
     }
 
     // query Stock DStream
-    private static void queryStockStream(JavaStreamingContext ssc, JavaDStream<Stock> personStream) {
+    private static void queryStockStream(JavaStreamingContext ssc, JavaDStream<Stock> stockStream) {
 
         // Convert RDDs of the words DStream to DataFrame and run SQL query
-        personStream.foreachRDD(new Function2<JavaRDD<Stock>, Time, Void>() {
+        stockStream.foreachRDD(new Function2<JavaRDD<Stock>, Time, Void>() {
             @Override
             public Void call(JavaRDD<Stock> rdd, Time time) {
                 SQLContext sqlContext = SQLContextSingleton.getInstance(rdd.context());

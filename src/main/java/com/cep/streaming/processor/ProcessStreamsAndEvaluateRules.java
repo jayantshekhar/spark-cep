@@ -41,7 +41,7 @@ public class ProcessStreamsAndEvaluateRules {
         });
 
 
-        // Convert RDDs of the words DStream to DataFrame and run SQL query
+        // Convert RDDs of the CEPEvent DStream to DataFrame and run SQL query
         eventStream.foreachRDD(new Function2<JavaRDD<CEPEvent>, Time, Void>() {
             @Override
             public Void call(JavaRDD<CEPEvent> rdd, Time time) {
@@ -53,12 +53,15 @@ public class ProcessStreamsAndEvaluateRules {
                 // Register as table
                 stockDataFrame.registerTempTable(tableName);
 
+                // Process all the rules
                 for (int i=0; i<rules.length; i++) {
                     StreamingRule rule = rules[i];
 
+                    // run sql
                     DataFrame df = sqlContext.sql(rule.sql);
                     df.show();
 
+                    // invoke the listener
                     try {
                         final EventListener listener = EventListener.createListener(Class.forName(rule.eventListenerClass));
 
@@ -81,6 +84,7 @@ public class ProcessStreamsAndEvaluateRules {
 
                 }
 
+                /***
                 // #ticks/avg/min/max events per symbol on table using SQL and print it
                 DataFrame stocksCountsDataFrame =
                         sqlContext.sql("select symbol, count(*) as numticks, avg(price) as avgprice, min(price) as minprice, max(price) as maxprice from stocks group by symbol");
@@ -116,6 +120,7 @@ public class ProcessStreamsAndEvaluateRules {
                 } catch(Exception ex) {
 
                 }
+                 ***/
 
                 return null;
             }
